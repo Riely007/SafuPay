@@ -1,0 +1,1290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SafeTransfer</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@latest/dist/web3.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 30px;
+            color: white;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+        
+        .wallet-info {
+            margin-top: 15px;
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .network-info {
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            display: inline-block;
+        }
+        
+        .network-info.mainnet {
+            background: rgba(76, 175, 80, 0.3);
+            border: 1px solid rgba(76, 175, 80, 0.5);
+        }
+        
+        .network-info.wrong-network {
+            background: rgba(244, 67, 54, 0.3);
+            border: 1px solid rgba(244, 67, 54, 0.5);
+            cursor: pointer;
+        }
+        
+        .network-info.wrong-network:hover {
+            background: rgba(244, 67, 54, 0.4);
+        }
+        
+        .config-section {
+            padding: 20px 30px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e9ecef;
+        }
+        
+        .config-section label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .config-section input {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .tabs {
+            display: flex;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: 600;
+            color: #6c757d;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab:hover {
+            background: #e9ecef;
+        }
+        
+        .tab.active {
+            color: #667eea;
+            background: white;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 30px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+        }
+        
+        .input-with-button {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .input-with-button input {
+            flex: 1;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:active {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+        }
+        
+        .status {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 8px;
+            font-size: 14px;
+            white-space: pre-line;
+            line-height: 1.6;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+        
+        .transfer-list {
+            margin-top: 20px;
+        }
+        
+        .transfer-item {
+            background: #f8f9fa;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .transfer-item.claimed {
+            background: #d4edda;
+            border-color: #c3e6cb;
+        }
+        
+        .transfer-item.cancelled {
+            background: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        
+        .transfer-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .transfer-info div {
+            word-break: break-all;
+        }
+        
+        .transfer-info strong {
+            color: #495057;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .modal-header h3 {
+            color: #495057;
+        }
+        
+        .close-btn {
+            background: none;
+            color: #6c757d;
+            font-size: 24px;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .token-list {
+            display: grid;
+            gap: 10px;
+        }
+        
+        .token-item {
+            padding: 15px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .token-item:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+        
+        .salt-list {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 10px;
+        }
+        
+        .salt-item {
+            padding: 10px;
+            text-align: center;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .salt-item:hover {
+            border-color: #667eea;
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>SafeTransfer</h1>
+            <div class="wallet-info">
+                <div id="walletAddress">Wallet Not Connected</div>
+                <div id="networkInfo" class="network-info" style="display: none;"></div>
+                <button id="connectWalletBtn" onclick="connectWallet()" style="margin-top: 10px; background: rgba(255,255,255,0.2); border: 2px solid white;">Connect Wallet</button>
+            </div>
+        </div>
+        
+        <div class="config-section">
+            <label for="contractAddress">Contract Address:</label>
+            <input type="text" id="contractAddress" placeholder="Enter contract address" value="0xd3e1f1668b9765d52a7b222fa9f03432cadc38a9" readonly style="background: #e9ecef;">
+        </div>
+        
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('deposit')">Deposit</div>
+            <div class="tab" onclick="switchTab('claim')">Claim</div>
+            <div class="tab" onclick="switchTab('cancel')">Cancel</div>
+        </div>
+        
+        <div id="deposit" class="tab-content active">
+            <h2>Deposit</h2>
+            <div id="depositStatus"></div>
+            
+            <div class="form-group">
+                <label>Token Address:</label>
+                <div class="input-with-button">
+                    <input type="text" id="depositTokenAddress" placeholder="Select or enter token address">
+                    <button class="btn-small" onclick="openTokenSelector()">Select</button>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>Amount:</label>
+                <input type="text" id="depositAmount" placeholder="Enter amount">
+            </div>
+            
+            <div class="form-group">
+                <label>Receiver Address:</label>
+                <input type="text" id="receiverAddress" placeholder="Enter receiver address">
+            </div>
+            
+            <div class="form-group">
+                <label>Salt Hash:</label>
+                <div class="input-with-button">
+                    <input type="text" id="saltHash" placeholder="Generate or enter Salt Hash" readonly>
+                    <button class="btn-small" onclick="openSaltGenerator()">Generate</button>
+                </div>
+            </div>
+            
+            <button onclick="executeDeposit()">Deposit</button>
+        </div>
+        
+        <div id="claim" class="tab-content">
+            <h2>Claim</h2>
+            <div id="claimStatus"></div>
+            
+            <div class="form-group">
+                <label>Salt Hash:</label>
+                <input type="text" id="claimSaltHash" placeholder="Enter Salt Hash">
+                <small style="color: #6c757d; display: block; margin-top: 5px;">
+                    Please enter the Salt Hash provided by the sender
+                </small>
+            </div>
+            
+            <button onclick="executeClaim()">Claim</button>
+        </div>
+        
+        <div id="cancel" class="tab-content">
+            <h2>Cancel Transfer</h2>
+            <div id="cancelStatus"></div>
+            
+            <button onclick="loadMyTransfers()">Load My Transfers</button>
+            
+            <div class="transfer-list" id="transferList"></div>
+        </div>
+    </div>
+    
+    <!-- Token Selection Modal -->
+    <div id="tokenModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Select Token</h3>
+                <button class="close-btn" onclick="closeTokenSelector()">&times;</button>
+            </div>
+            <div class="token-list" id="tokenList"></div>
+        </div>
+    </div>
+    
+    <!-- Salt Generation Modal -->
+    <div id="saltModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Generate Salt Hash</h3>
+                <button class="close-btn" onclick="closeSaltGenerator()">&times;</button>
+            </div>
+            <p style="margin-bottom: 15px; color: #6c757d;">Select a number (1-100) to generate Salt Hash:</p>
+            <div class="salt-list" id="saltList"></div>
+        </div>
+    </div>
+
+    <script>
+        // Common Token Configuration (Ethereum Mainnet)
+        const TOKENS = {
+            'USDT': {
+                address: '0xdAC17F958D2ee523a2206206994597C13D831ec7',
+                decimals: 6,
+                symbol: 'USDT'
+            },
+            'USDC': {
+                address: '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48',
+                decimals: 6,
+                symbol: 'USDC'
+            },
+            'DAI': {
+                address: '0x6B175474E89094C44Da98b954EedeAC495271d0F',
+                decimals: 18,
+                symbol: 'DAI'
+            },
+            'WETH': {
+                address: '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2',
+                decimals: 18,
+                symbol: 'WETH'
+            }
+        };
+        
+        // ERC20 ABI (Simplified)
+        const ERC20_ABI = [
+            {
+                "constant": true,
+                "inputs": [],
+                "name": "decimals",
+                "outputs": [{"name": "", "type": "uint8"}],
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [{"name": "_owner", "type": "address"}, {"name": "_spender", "type": "address"}],
+                "name": "allowance",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "type": "function"
+            },
+            {
+                "constant": false,
+                "inputs": [{"name": "_spender", "type": "address"}, {"name": "_value", "type": "uint256"}],
+                "name": "approve",
+                "outputs": [{"name": "", "type": "bool"}],
+                "type": "function"
+            },
+            {
+                "constant": true,
+                "inputs": [{"name": "_owner", "type": "address"}],
+                "name": "balanceOf",
+                "outputs": [{"name": "balance", "type": "uint256"}],
+                "type": "function"
+            }
+        ];
+        
+        // SafeTransfer Contract ABI
+        const SAFEP2P_ABI = [
+            {
+                "inputs": [{"name": "token_address", "type": "address"}, {"name": "receiver_hash", "type": "bytes32"}, {"name": "amount", "type": "uint256"}],
+                "name": "deposit",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"name": "salt_hash", "type": "bytes32"}],
+                "name": "claim",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"name": "index", "type": "uint256"}],
+                "name": "cancel",
+                "outputs": [],
+                "stateMutability": "nonpayable",
+                "type": "function"
+            },
+            {
+                "inputs": [{"name": "salt_hash", "type": "bytes32"}, {"name": "receiver_address", "type": "address"}],
+                "name": "get_receiver_hash",
+                "outputs": [{"name": "", "type": "bytes32"}],
+                "stateMutability": "pure",
+                "type": "function"
+            },
+            {
+                "inputs": [{"name": "", "type": "bytes32"}],
+                "name": "receiver_hash_index",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"name": "sender", "type": "address"}],
+                "name": "getSenderTransfersLength",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"name": "sender", "type": "address"}, {"name": "offset", "type": "uint256"}, {"name": "limit", "type": "uint256"}],
+                "name": "getSenderTransfersByOffset",
+                "outputs": [{"name": "", "type": "uint256[]"}],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [{"name": "", "type": "uint256"}],
+                "name": "transfers",
+                "outputs": [
+                    {"name": "sender_address", "type": "address"},
+                    {"name": "token_address", "type": "address"},
+                    {"name": "amount", "type": "uint256"},
+                    {"name": "is_claimed", "type": "bool"},
+                    {"name": "is_cancelled", "type": "bool"}
+                ],
+                "stateMutability": "view",
+                "type": "function"
+            },
+            {
+                "inputs": [],
+                "name": "getTransferCount",
+                "outputs": [{"name": "", "type": "uint256"}],
+                "stateMutability": "view",
+                "type": "function"
+            }
+        ];
+        
+        let web3;
+        let account;
+        let safeP2PContract;
+        
+        // Network Configuration
+        const NETWORKS = {
+            1: { name: 'Ethereum Mainnet', isMainnet: true },
+            5: { name: 'Goerli Testnet', isMainnet: false },
+            11155111: { name: 'Sepolia Testnet', isMainnet: false },
+            137: { name: 'Polygon Mainnet', isMainnet: false },
+            56: { name: 'BSC Mainnet', isMainnet: false },
+            97: { name: 'BSC Testnet', isMainnet: false }
+        };
+        
+        const MAINNET_CHAIN_ID = '0x1'; // 1 in hex
+        
+        // Check and display network information
+        async function checkNetwork() {
+            try {
+                const chainId = await window.ethereum.request({ method: 'eth_chainId' });
+                const chainIdDecimal = parseInt(chainId, 16);
+                const networkInfo = NETWORKS[chainIdDecimal] || { name: `Unknown Network (${chainIdDecimal})`, isMainnet: false };
+                
+                const networkInfoDiv = document.getElementById('networkInfo');
+                networkInfoDiv.style.display = 'block';
+                
+                if (networkInfo.isMainnet) {
+                    networkInfoDiv.className = 'network-info mainnet';
+                    networkInfoDiv.innerHTML = `✓ ${networkInfo.name}`;
+                    networkInfoDiv.onclick = null;
+                } else {
+                    networkInfoDiv.className = 'network-info wrong-network';
+                    networkInfoDiv.innerHTML = `⚠️ ${networkInfo.name} - Click to switch to Mainnet`;
+                    networkInfoDiv.onclick = switchToMainnet;
+                }
+                
+                return networkInfo.isMainnet;
+            } catch (error) {
+                console.error('Check network failed:', error);
+                return false;
+            }
+        }
+        
+        // Switch to Ethereum Mainnet
+        async function switchToMainnet() {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: MAINNET_CHAIN_ID }],
+                });
+                await checkNetwork();
+            } catch (error) {
+                if (error.code === 4902) {
+                    alert('Ethereum Mainnet is not configured in your wallet');
+                } else {
+                    console.error('Switch network failed:', error);
+                    alert('Switch network failed: ' + error.message);
+                }
+            }
+        }
+        
+        // Detect Web3 Provider
+        function detectProvider() {
+            // Check standard window.ethereum
+            if (typeof window.ethereum !== 'undefined') {
+                return window.ethereum;
+            }
+            
+            // Check for specific wallet providers
+            if (typeof window.web3 !== 'undefined' && window.web3.currentProvider) {
+                return window.web3.currentProvider;
+            }
+            
+            return null;
+        }
+        
+        // Get wallet name
+        function getWalletName() {
+            if (!window.ethereum) return 'Unknown';
+            
+            if (window.ethereum.isMetaMask) return 'MetaMask';
+            if (window.ethereum.isImToken) return 'ImToken';
+            if (window.ethereum.isTrust) return 'Trust Wallet';
+            if (window.ethereum.isCoinbaseWallet) return 'Coinbase Wallet';
+            if (window.ethereum.isTokenPocket) return 'TokenPocket';
+            
+            return 'Web3 Wallet';
+        }
+        
+        // Connect Wallet
+        async function connectWallet() {
+            const provider = detectProvider();
+            
+            if (provider) {
+                try {
+                    const walletName = getWalletName();
+                    console.log('Detected wallet:', walletName);
+                    
+                    // Request account access
+                    const accounts = await provider.request({ method: 'eth_requestAccounts' });
+                    account = accounts[0];
+                    
+                    // Initialize Web3
+                    web3 = new Web3(provider);
+                    
+                    // Update UI
+                    document.getElementById('walletAddress').textContent = `Wallet: ${account.substring(0, 6)}...${account.substring(38)}`;
+                    document.getElementById('connectWalletBtn').style.display = 'none';
+                    
+                    // Listen to account changes
+                    provider.on('accountsChanged', function (accounts) {
+                        if (accounts.length > 0) {
+                            account = accounts[0];
+                            document.getElementById('walletAddress').textContent = `Wallet: ${account.substring(0, 6)}...${account.substring(38)}`;
+                            document.getElementById('connectWalletBtn').style.display = 'none';
+                        } else {
+                            account = null;
+                            document.getElementById('walletAddress').textContent = 'Wallet Not Connected';
+                            document.getElementById('connectWalletBtn').style.display = 'block';
+                            document.getElementById('networkInfo').style.display = 'none';
+                        }
+                    });
+                    
+                    // Listen to network changes
+                    provider.on('chainChanged', function (chainId) {
+                        checkNetwork();
+                    });
+                    
+                    // Initialize contract
+                    updateContract();
+                    
+                    // Check network
+                    const isMainnet = await checkNetwork();
+                    
+                    if (isMainnet) {
+                        showStatus('deposit', 'success', `✓ ${walletName} connected successfully! Connected to Ethereum Mainnet`);
+                    } else {
+                        showStatus('deposit', 'info', `${walletName} connected, but not on Ethereum Mainnet. Please switch network`);
+                    }
+                    
+                } catch (error) {
+                    console.error('Failed to connect wallet:', error);
+                    alert('Failed to connect wallet: ' + error.message);
+                }
+            } else {
+                alert('No Web3 wallet detected!\n\nPlease install one of the following wallets:\n• MetaMask\n• ImToken\n• Trust Wallet\n• TokenPocket\n• Coinbase Wallet\n\nOr open this page using the wallet\'s built-in browser.');
+            }
+        }
+        
+        // Initialize
+        async function init() {
+            // Check protocol
+            if (window.location.protocol === 'file:') {
+                document.getElementById('walletAddress').innerHTML = `
+                    <div style="color: #ffeb3b; font-size: 12px; line-height: 1.5;">
+                        ⚠️ Detected file:// protocol<br>
+                        Web3 wallets do not support opening files directly<br>
+                        Please use a local server<br>
+                        Run: <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">python3 -m http.server 8000</code><br>
+                        Then visit: <code style="background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 3px;">http://localhost:8000/index.html</code>
+                    </div>
+                `;
+                document.getElementById('connectWalletBtn').textContent = 'Cannot Connect (HTTP Server Required)';
+                document.getElementById('connectWalletBtn').disabled = true;
+                return;
+            }
+            
+            // Check if Web3 provider exists
+            const provider = detectProvider();
+            
+            if (provider) {
+                const walletName = getWalletName();
+                console.log('Initialize: Detected wallet -', walletName);
+                
+                web3 = new Web3(provider);
+                
+                // Check if already authorized
+                const accounts = await web3.eth.getAccounts();
+                if (accounts.length > 0) {
+                    account = accounts[0];
+                    document.getElementById('walletAddress').textContent = `Wallet: ${account.substring(0, 6)}...${account.substring(38)}`;
+                    document.getElementById('connectWalletBtn').style.display = 'none';
+                    
+                    // Listen to account changes
+                    provider.on('accountsChanged', function (accounts) {
+                        if (accounts.length > 0) {
+                            account = accounts[0];
+                            document.getElementById('walletAddress').textContent = `Wallet: ${account.substring(0, 6)}...${account.substring(38)}`;
+                            document.getElementById('connectWalletBtn').style.display = 'none';
+                        } else {
+                            account = null;
+                            document.getElementById('walletAddress').textContent = 'Wallet Not Connected';
+                            document.getElementById('connectWalletBtn').style.display = 'block';
+                            document.getElementById('networkInfo').style.display = 'none';
+                        }
+                    });
+                    
+                    // Listen to network changes
+                    provider.on('chainChanged', function (chainId) {
+                        checkNetwork();
+                    });
+                    
+                    // Initialize contract
+                    updateContract();
+                    
+                    // Check network
+                    await checkNetwork();
+                }
+            } else {
+                // No Web3 wallet detected
+                document.getElementById('walletAddress').innerHTML = `
+                    <div style="color: #ffeb3b; font-size: 12px; line-height: 1.5;">
+                        ⚠️ No Web3 Wallet Detected<br>
+                        Please install a wallet or use wallet's built-in browser
+                    </div>
+                `;
+                document.getElementById('connectWalletBtn').textContent = 'Please Install Web3 Wallet';
+                document.getElementById('connectWalletBtn').disabled = true;
+            }
+        }
+        
+        // Update contract instance
+        function updateContract() {
+            const contractAddress = document.getElementById('contractAddress').value;
+            if (web3 && contractAddress && contractAddress.startsWith('0x')) {
+                safeP2PContract = new web3.eth.Contract(SAFEP2P_ABI, contractAddress);
+            }
+        }
+        
+        // Switch Tab
+        function switchTab(tabName) {
+            // Update contract address
+            updateContract();
+            
+            // Hide all tabs
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        // Show status message
+        function showStatus(tab, type, message) {
+            const statusDiv = document.getElementById(tab + 'Status');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            statusDiv.style.display = 'block';
+        }
+        
+        // Open Token Selector
+        function openTokenSelector() {
+            const tokenList = document.getElementById('tokenList');
+            tokenList.innerHTML = '';
+            
+            Object.values(TOKENS).forEach(token => {
+                const div = document.createElement('div');
+                div.className = 'token-item';
+                div.innerHTML = `<strong>${token.symbol}</strong><br><small>${token.address}</small>`;
+                div.onclick = () => selectToken(token);
+                tokenList.appendChild(div);
+            });
+            
+            document.getElementById('tokenModal').classList.add('active');
+        }
+        
+        function closeTokenSelector() {
+            document.getElementById('tokenModal').classList.remove('active');
+        }
+        
+        function selectToken(token) {
+            document.getElementById('depositTokenAddress').value = token.address;
+            closeTokenSelector();
+        }
+        
+        // Open Salt Generator
+        function openSaltGenerator() {
+            const saltList = document.getElementById('saltList');
+            saltList.innerHTML = '';
+            
+            for (let i = 1; i <= 100; i++) {
+                const div = document.createElement('div');
+                div.className = 'salt-item';
+                div.textContent = i;
+                div.onclick = () => generateSalt(i);
+                saltList.appendChild(div);
+            }
+            
+            document.getElementById('saltModal').classList.add('active');
+        }
+        
+        function closeSaltGenerator() {
+            document.getElementById('saltModal').classList.remove('active');
+        }
+        
+        async function generateSalt(number) {
+            try {
+                if (!account) {
+                    showStatus('deposit', 'error', 'Please connect wallet first');
+                    return;
+                }
+                
+                const message = `SafeP2P:${number}`;
+                // Convert message to hex format
+                const messageHex = web3.utils.utf8ToHex(message);
+                
+                // Request signature using personal_sign
+                const signature = await window.ethereum.request({
+                    method: 'personal_sign',
+                    params: [messageHex, account]
+                });
+                
+                // Hash the signature to get salt_hash
+                const saltHash = web3.utils.keccak256(signature);
+                
+                document.getElementById('saltHash').value = saltHash;
+                closeSaltGenerator();
+                showStatus('deposit', 'success', `Salt Hash generated (Number: ${number})`);
+            } catch (error) {
+                console.error('Generate Salt Hash error:', error);
+                showStatus('deposit', 'error', 'Failed to generate Salt Hash: ' + error.message);
+            }
+        }
+        
+        // Get Token Decimals
+        async function getTokenDecimals(tokenAddress) {
+            try {
+                const tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddress);
+                const decimals = await tokenContract.methods.decimals().call();
+                return parseInt(decimals);
+            } catch (error) {
+                console.error('Failed to get decimals:', error);
+                return 18; // Default value
+            }
+        }
+        
+        // Execute Deposit
+        async function executeDeposit() {
+            try {
+                updateContract();
+                
+                // Check network
+                const isMainnet = await checkNetwork();
+                if (!isMainnet) {
+                    showStatus('deposit', 'error', 'Please switch to Ethereum Mainnet first!');
+                    return;
+                }
+                
+                const tokenAddress = document.getElementById('depositTokenAddress').value;
+                const amount = document.getElementById('depositAmount').value;
+                const receiverAddress = document.getElementById('receiverAddress').value;
+                const saltHash = document.getElementById('saltHash').value;
+                
+                // Validate input
+                if (!tokenAddress || !amount || !receiverAddress || !saltHash) {
+                    showStatus('deposit', 'error', 'Please fill in all fields');
+                    return;
+                }
+                
+                if (!web3.utils.isAddress(tokenAddress)) {
+                    showStatus('deposit', 'error', 'Invalid token address');
+                    return;
+                }
+                
+                if (!web3.utils.isAddress(receiverAddress)) {
+                    showStatus('deposit', 'error', 'Invalid receiver address');
+                    return;
+                }
+                
+                showStatus('deposit', 'info', 'Processing...');
+                
+                // Get decimals and calculate actual amount
+                const decimals = await getTokenDecimals(tokenAddress);
+                
+                // Safely convert decimal to smallest unit (avoid floating point precision issues)
+                let amountWei;
+                try {
+                    // Remove extra spaces
+                    const amountStr = amount.trim();
+                    
+                    // Separate integer and decimal parts
+                    const parts = amountStr.split('.');
+                    const integerPart = parts[0] || '0';
+                    const decimalPart = parts[1] || '';
+                    
+                    // Check if decimal places exceed decimals
+                    if (decimalPart.length > decimals) {
+                        showStatus('deposit', 'error', `Decimal places cannot exceed ${decimals} digits`);
+                        return;
+                    }
+                    
+                    // Pad decimal places
+                    const paddedDecimal = decimalPart.padEnd(decimals, '0');
+                    
+                    // Concatenate integer part and padded decimal part
+                    const fullAmount = integerPart + paddedDecimal;
+                    
+                    // Convert to BigInt
+                    amountWei = BigInt(fullAmount);
+                    
+                    if (amountWei <= 0n) {
+                        showStatus('deposit', 'error', 'Amount must be greater than 0');
+                        return;
+                    }
+                } catch (error) {
+                    showStatus('deposit', 'error', 'Invalid amount format');
+                    return;
+                }
+                
+                // Get receiver_hash
+                const receiverHash = await safeP2PContract.methods.get_receiver_hash(saltHash, receiverAddress).call();
+                
+                // Check allowance
+                const tokenContract = new web3.eth.Contract(ERC20_ABI, tokenAddress);
+                const allowance = await tokenContract.methods.allowance(account, safeP2PContract.options.address).call();
+                
+                if (BigInt(allowance) < amountWei) {
+                    showStatus('deposit', 'info', 'Insufficient allowance, requesting authorization...');
+                    
+                    // Request authorization (maximum)
+                    const maxApproval = (BigInt(2) ** BigInt(256) - BigInt(1)).toString();
+                    await tokenContract.methods.approve(
+                        safeP2PContract.options.address,
+                        maxApproval
+                    ).send({ from: account });
+                    
+                    showStatus('deposit', 'success', 'Authorization successful! Executing deposit...');
+                }
+                
+                // Execute deposit
+                const tx = await safeP2PContract.methods.deposit(
+                    tokenAddress,
+                    receiverHash,
+                    amountWei.toString()
+                ).send({ from: account });
+                
+                showStatus('deposit', 'success', `Deposit successful! Tx hash: ${tx.transactionHash}`);
+                
+                // Clear form
+                document.getElementById('depositAmount').value = '';
+                document.getElementById('receiverAddress').value = '';
+                
+            } catch (error) {
+                console.error('Deposit error:', error);
+                showStatus('deposit', 'error', 'Deposit failed: ' + error.message);
+            }
+        }
+        
+        // Execute Claim
+        async function executeClaim() {
+            try {
+                updateContract();
+                
+                // Check network
+                const isMainnet = await checkNetwork();
+                if (!isMainnet) {
+                    showStatus('claim', 'error', 'Please switch to Ethereum Mainnet first!');
+                    return;
+                }
+                
+                const saltHash = document.getElementById('claimSaltHash').value;
+                
+                if (!saltHash) {
+                    showStatus('claim', 'error', 'Please enter Salt Hash');
+                    return;
+                }
+                
+                showStatus('claim', 'info', 'Checking transfer information...');
+                
+                let forceWithdraw = false; // Whether to force withdraw
+                let transferIndex;
+                let transfer;
+                let amountDisplay = 'Unknown';
+                
+                try {
+                    // Calculate receiver_hash
+                    const receiverHash = await safeP2PContract.methods.get_receiver_hash(saltHash, account).call();
+                    
+                    // Get corresponding transfer index
+                    transferIndex = await safeP2PContract.methods.receiver_hash_index(receiverHash).call();
+                    
+                    // Get total transfer count
+                    const totalTransfers = await safeP2PContract.methods.getTransferCount().call();
+                    
+                    // Check if index is valid
+                    if (transferIndex === '0' || transferIndex === 0) {
+                        if (totalTransfers === '0' || totalTransfers === 0) {
+                            showStatus('claim', 'error', '⚠️ Warning: No transfers in contract yet');
+                            if (!confirm('Warning: No corresponding transfer found, no transfers in contract yet.\n\nStill try to claim? (Likely to fail)')) {
+                                showStatus('claim', 'info', 'Claim operation cancelled');
+                                return;
+                            }
+                            forceWithdraw = true;
+                        }
+                    }
+                    
+                    // Verify index does not exceed total transfers
+                    if (!forceWithdraw && BigInt(transferIndex) >= BigInt(totalTransfers)) {
+                        showStatus('claim', 'error', '⚠️ Warning: No corresponding transfer found');
+                        if (!confirm('Warning: No corresponding transfer found, please check if Salt Hash is correct.\n\nStill try to claim? (Likely to fail)')) {
+                            showStatus('claim', 'info', 'Claim operation cancelled');
+                            return;
+                        }
+                        forceWithdraw = true;
+                    }
+                    
+                    if (!forceWithdraw) {
+                        // Get transfer details
+                        transfer = await safeP2PContract.methods.transfers(transferIndex).call();
+                        
+                        // Extra check: if sender is zero address, this transfer does not exist
+                        if (transfer.sender_address === '0x0000000000000000000000000000000000000000') {
+                            showStatus('claim', 'error', '⚠️ Warning: No corresponding transfer found (sender address is empty)');
+                            if (!confirm('Warning: No valid transfer found.\n\nStill try to claim? (Likely to fail)')) {
+                                showStatus('claim', 'info', 'Claim operation cancelled');
+                                return;
+                            }
+                            forceWithdraw = true;
+                        }
+                    }
+                    
+                    if (!forceWithdraw) {
+                        // Check transfer status
+                        if (transfer.is_claimed) {
+                            showStatus('claim', 'error', '⚠️ Warning: Transfer has been claimed');
+                            if (!confirm('Warning: Transfer has been claimed, cannot claim again.\n\nStill try to claim? (Likely to fail)')) {
+                                showStatus('claim', 'info', 'Claim operation cancelled');
+                                return;
+                            }
+                            forceWithdraw = true;
+                        }
+                        
+                        if (!forceWithdraw && transfer.is_cancelled) {
+                            showStatus('claim', 'error', '⚠️ Warning: Transfer has been cancelled by sender');
+                            if (!confirm('Warning: Transfer has been cancelled by sender.\n\nStill try to claim? (Likely to fail)')) {
+                                showStatus('claim', 'info', 'Claim operation cancelled');
+                                return;
+                            }
+                            forceWithdraw = true;
+                        }
+                    }
+                    
+                    // If all checks pass, show claimable information
+                    if (!forceWithdraw) {
+                        // Get token decimals to display correct amount
+                        const decimals = await getTokenDecimals(transfer.token_address);
+                        const amount = BigInt(transfer.amount);
+                        amountDisplay = (Number(amount) / (10 ** decimals)).toFixed(decimals > 6 ? 6 : decimals);
+                        
+                        // Show claimable information
+                        showStatus('claim', 'success', 
+                            `✓ Can claim!\n\n` +
+                            `Amount: ${amountDisplay}\n` +
+                            `Token address: ${transfer.token_address}\n` +
+                            `Sender: ${transfer.sender_address}\n` +
+                            `Transfer index: ${transferIndex}`
+                        );
+                        
+                        // Confirm to continue claim
+                        if (!confirm(`Confirm claim ${amountDisplay} tokens?\n\nToken: ${transfer.token_address}\nSender: ${transfer.sender_address}`)) {
+                            showStatus('claim', 'info', 'Claim operation cancelled');
+                            return;
+                        }
+                    }
+                    
+                } catch (checkError) {
+                    console.error('Error checking transfer:', checkError);
+                    showStatus('claim', 'error', '⚠️ Warning: Error checking transfer information');
+                    if (!confirm(`Error checking transfer information: ${checkError.message}\n\nStill try to claim? (May fail)`)) {
+                        showStatus('claim', 'info', 'Claim operation cancelled');
+                        return;
+                    }
+                    forceWithdraw = true;
+                }
+                
+                // Execute claim
+                showStatus('claim', 'info', forceWithdraw ? 'Attempting forced claim...' : 'Processing claim...');
+                
+                const tx = await safeP2PContract.methods.claim(saltHash).send({ from: account });
+                
+                showStatus('claim', 'success', `✓ Claim successful!\nTx hash: ${tx.transactionHash}`);
+                
+                // Clear form
+                document.getElementById('claimSaltHash').value = '';
+                
+            } catch (error) {
+                console.error('Claim error:', error);
+                showStatus('claim', 'error', 'Claim failed: ' + error.message);
+            }
+        }
+        
+        // Load My Transfers
+        async function loadMyTransfers() {
+            try {
+                updateContract();
+                
+                // Check network
+                const isMainnet = await checkNetwork();
+                if (!isMainnet) {
+                    showStatus('cancel', 'error', 'Please switch to Ethereum Mainnet first!');
+                    return;
+                }
+                
+                showStatus('cancel', 'info', 'Loading transfer records...');
+                
+                const transferList = document.getElementById('transferList');
+                transferList.innerHTML = '';
+                
+                // Get sender's transfer count
+                const transferCount = await safeP2PContract.methods.getSenderTransfersLength(account).call();
+                
+                if (transferCount == 0) {
+                    showStatus('cancel', 'info', 'No transfer records found');
+                    return;
+                }
+                
+                // Batch get transfer indexes (get all at once)
+                const transferIndexes = await safeP2PContract.methods.getSenderTransfersByOffset(
+                    account,
+                    0,
+                    transferCount
+                ).call();
+                
+                // Get details for each transfer (including formatted amount)
+                let transfers = [];
+                for (let i = 0; i < transferIndexes.length; i++) {
+                    const transfer = await safeP2PContract.methods.transfers(transferIndexes[i]).call();
+                    
+                    // Get token decimals and format amount
+                    const decimals = await getTokenDecimals(transfer.token_address);
+                    const amount = BigInt(transfer.amount);
+                    const amountDisplay = (Number(amount) / (10 ** decimals)).toFixed(decimals > 6 ? 6 : decimals);
+                    
+                    transfers.push({ 
+                        index: transferIndexes[i], 
+                        data: transfer,
+                        amountDisplay: amountDisplay,
+                        decimals: decimals
+                    });
+                }
+                
+                // Display transfer records
+                for (const transfer of transfers) {
+                    const div = document.createElement('div');
+                    const status = transfer.data.is_claimed ? 'claimed' : (transfer.data.is_cancelled ? 'cancelled' : '');
+                    div.className = `transfer-item ${status}`;
+                    
+                    let statusText = 'Pending';
+                    if (transfer.data.is_claimed) statusText = 'Claimed';
+                    if (transfer.data.is_cancelled) statusText = 'Cancelled';
+                    
+                    div.innerHTML = `
+                        <div class="transfer-info">
+                            <div><strong>Index:</strong> ${transfer.index}</div>
+                            <div><strong>Status:</strong> ${statusText}</div>
+                            <div><strong>Token:</strong> ${transfer.data.token_address.substring(0, 10)}...</div>
+                            <div><strong>Amount:</strong> ${transfer.amountDisplay}</div>
+                        </div>
+                        ${!transfer.data.is_claimed && !transfer.data.is_cancelled ? 
+                            `<button onclick="executeCancel(${transfer.index})">Cancel Transfer</button>` : 
+                            ''}
+                    `;
+                    
+                    transferList.appendChild(div);
+                }
+                
+                showStatus('cancel', 'success', `Loaded ${transfers.length} transfer records`);
+                
+            } catch (error) {
+                showStatus('cancel', 'error', 'Load failed: ' + error.message);
+            }
+        }
+        
+        // Execute Cancel
+        async function executeCancel(index) {
+            try {
+                updateContract();
+                
+                // Check network
+                const isMainnet = await checkNetwork();
+                if (!isMainnet) {
+                    showStatus('cancel', 'error', 'Please switch to Ethereum Mainnet first!');
+                    return;
+                }
+                
+                showStatus('cancel', 'info', 'Cancelling transfer...');
+                
+                const tx = await safeP2PContract.methods.cancel(index).send({ from: account });
+                
+                showStatus('cancel', 'success', `Cancel successful! Tx hash: ${tx.transactionHash}`);
+                
+                // Reload list
+                setTimeout(() => loadMyTransfers(), 2000);
+                
+            } catch (error) {
+                showStatus('cancel', 'error', 'Cancel failed: ' + error.message);
+            }
+        }
+        
+        // Initialize on page load
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
